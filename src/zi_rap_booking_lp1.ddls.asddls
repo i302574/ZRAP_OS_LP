@@ -10,7 +10,7 @@
 define view entity zi_rap_booking_lp1
   as select from zrap_abook_lp1 as Booking
 
-  association [1..1] to zi_rap_travel_lp1 as _Travel     on  $projection.TravelUuid = _Travel.TravelUuid
+  association to parent zi_rap_travel_lp1 as _Travel   on  $projection.TravelUuid = _Travel.TravelUuid
   association [1..1] to /DMO/I_Customer   as _Customer   on  $projection.CustomerId = _Customer.CustomerID
   association [1..1] to /DMO/I_Carrier    as _Carrier    on  $projection.CarrierId = _Carrier.AirlineID
   association [1..1] to /DMO/I_Connection as _Connection on  $projection.CarrierId    = _Connection.AirlineID

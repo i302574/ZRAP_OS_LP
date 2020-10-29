@@ -1,9 +1,9 @@
 @AccessControl.authorizationCheck: #CHECK
 @EndUserText.label: 'Travel view'
-define view entity zi_rap_travel_lp1
+define root view entity zi_rap_travel_lp1
   as select from zrap_atrav_lp1 as Travel
 
-  association [0..*] to ZI_rap_booking_lp1 as _Booking  on $projection.TravelUUID = _Booking.TravelUUID
+  composition [0..*] of zi_rap_booking_lp1 as _Booking
   association [0..1] to /DMO/I_Agency      as _Agency   on $projection.AgencyId = _Agency.AgencyID
   association [0..1] to /DMO/I_Customer    as _Customer on $projection.CustomerId = _Customer.CustomerID
   association [0..1] to I_Currency         as _Currency on $projection.CurrencyCode = _Currency.Currency
@@ -33,6 +33,7 @@ define view entity zi_rap_travel_lp1
       local_last_changed_at as LocalLastChangedAt,
 
       //      "publish associations
+      _Booking,
       _Agency,
       _Customer,
       _Currency
