@@ -1,0 +1,68 @@
+@Metadata.layer: #CORE
+@UI.headerInfo: {
+            typeName: 'Travel',
+            typeNamePlural: 'Travels',
+            title: { type: #STANDARD, label: 'Travel', value: 'TravelId' }
+            }
+@UI.presentationVariant: [{ sortOrder: [{ by: 'TravelId', direction: #DESC }] }]
+
+annotate view Zc_Rap_Travel_Lp1 with
+{
+  @UI.facet: [{
+         id: 'Travel',
+         purpose: #STANDARD,
+         type: #IDENTIFICATION_REFERENCE,
+         label: 'Travel',
+         position: 10 },
+         { id: 'Booking',
+         purpose: #STANDARD,
+         type: #LINEITEM_REFERENCE,
+         label: 'Booking',
+         position: 20,
+         targetElement: '_Booking' }]
+
+  @UI.identification: [{ position: 1, label: 'Travel UUID' }]
+  TravelUuid;
+
+  @UI: { identification: [{ position: 10 }],
+         lineItem:       [{ position: 10 }],
+         selectionField: [{ position: 10 }] }
+  TravelId;
+  @UI: { identification: [{ position: 20 }],
+         lineItem:       [{ position: 20 }],
+         selectionField: [{ position: 20 }] }
+  AgencyId;
+  @UI: { identification: [{ position: 30 }],
+         lineItem:       [{ position: 30 }],
+         selectionField: [{ position: 30 }] }
+  CustomerId;
+  @UI: { identification: [{ position: 40 }],
+         lineItem:       [{ position: 40 }]}
+  BeginDate;
+  @UI: { identification: [{ position: 50 }],
+         lineItem:       [{ position: 50 }]}
+  EndDate;
+  @UI: { identification: [{ position: 60 }],
+       lineItem: [{ position: 60 }]}
+  BookingFee;
+  @UI: { identification: [{ position: 70 }],
+       lineItem: [{ position: 70 }]}
+  TotalPrice;
+  @UI: { identification: [{ position: 80 }],
+       lineItem: [{ position: 80 }]}
+  Description;
+  @UI: { identification: [{ position: 90 }],
+       lineItem: [{ position: 90 }]}
+  TravelStatus;
+  @UI.hidden: true
+  CreatedBy;
+  @UI.hidden: true
+  CreatedAt;
+  @UI.hidden: true
+  LastChangedBy;
+  @UI.hidden: true
+  LastChangedAt;
+  @UI.hidden: true
+  LocalLastChangedAt;
+
+}
