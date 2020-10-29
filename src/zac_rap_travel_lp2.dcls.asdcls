@@ -1,0 +1,11 @@
+@EndUserText.label: 'Access control for Travel BO projection'
+@MappingRole: true
+define role ZAC_RAP_TRAVEL_LP2 {
+    grant
+        select
+            on
+                ZC_RAP_TRAVEL_LP1
+                    where
+                        inheriting conditions from entity zi_rap_travel_lp1;
+                        
+}
