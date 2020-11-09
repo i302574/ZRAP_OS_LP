@@ -1,7 +1,8 @@
 projection;
+use draft;
 
 define behavior for Zc_Rap_Travel_Lp1 alias Travel
-use etag
+//use etag
 {
   use create;
   use update;
@@ -10,14 +11,14 @@ use etag
   use action acceptTravel;
   use action rejectTravel;
 
-  use association _Booking { create; }
+  use association _Booking { create; with draft;}
 }
 
 define behavior for zc_rap_booking_lp1 alias Booking
-use etag
+//use etag
 {
   use update;
   use delete;
 
-  use association _Travel;
+  use association _Travel { with draft; }
 }
