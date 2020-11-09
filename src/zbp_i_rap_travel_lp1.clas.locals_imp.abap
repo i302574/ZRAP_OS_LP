@@ -339,6 +339,27 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_features.
+   " Read the travel status of the existing travels
+    READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+      ENTITY Travel
+        FIELDS ( TravelStatus ) WITH CORRESPONDING #( keys )
+      RESULT DATA(travels)
+      FAILED failed.
+
+    result =
+      VALUE #(
+        FOR travel IN travels
+          LET is_accepted =   COND #( WHEN travel-TravelStatus = travel_status-accepted
+                                      THEN if_abap_behv=>fc-o-disabled
+                                      ELSE if_abap_behv=>fc-o-enabled  )
+              is_rejected =   COND #( WHEN travel-TravelStatus = travel_status-canceled
+                                      THEN if_abap_behv=>fc-o-disabled
+                                      ELSE if_abap_behv=>fc-o-enabled )
+          IN
+            ( %tky                 = travel-%tky
+              %action-acceptTravel = is_accepted
+              %action-rejectTravel = is_rejected
+             ) ).
   ENDMETHOD.
 
 ENDCLASS.
