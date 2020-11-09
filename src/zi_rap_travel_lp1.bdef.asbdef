@@ -1,6 +1,7 @@
-managed; // implementation in class zbp_i_rap_travel_lp1 unique;
+managed;
 
 define behavior for zi_rap_travel_lp1 alias Travel
+implementation in class zbp_i_rap_travel_lp1 unique
 persistent table zrap_atrav_lp1
 lock master
 //authorization master ( instance )
@@ -12,6 +13,22 @@ etag master LocalLastChangedAt
   association _Booking { create; }
 
   field ( numbering : managed, readonly ) TravelUuid;
+  field ( readonly ) TravelId, TotalPrice, TravelStatus;
+  field ( readonly ) LastChangedAt, LastChangedBy, LocalLastChangedAt, CreatedAt, CreatedBy;
+  field ( mandatory ) AgencyId, CustomerId;
+
+  action ( features : instance ) acceptTravel result [1] $self;
+  action ( features : instance ) rejectTravel result [1] $self;
+  internal action recalcTotalPrice;
+
+  determination setInitialStatus on modify { create; }
+  determination calculateTotalPrice on modify { field BookingFee, CurrencyCode; }
+  determination calculateTravelID on save { create; }
+
+  validation valAgency on save { field AgencyId; create; }
+  validation valCustomer on save { field CustomerId; create; }
+  validation valDates on save { field BeginDate, EndDate; create; }
+
 
   mapping for zrap_atrav_lp1
   {
@@ -34,7 +51,8 @@ etag master LocalLastChangedAt
     }
 }
 
-define behavior for zi_rap_booking_lp1 //alias <alias_name>
+define behavior for zi_rap_booking_lp1 alias Booking
+implementation in class zbp_i_rap_booking_LP1 unique
 persistent table zrap_abook_lp1
 lock dependent by _Travel
 //authorization dependent by <association>
@@ -45,7 +63,12 @@ etag master LocalLastChangedAt
 
   association _Travel;
   field (numbering : managed, readonly ) BookingUuid;
-  field (readonly) TravelUuid;
+  field (readonly) TravelUuid, BookingId;
+  field (readonly) CreatedBy, LastChangedBy, LocalLastChangedAt;
+
+  determination calcBookingID on modify { create; }
+  determination calcTotalPrice on modify { field FlightPrice, CurrencyCode; }
+
 
   mapping for zrap_abook_lp1
   {
