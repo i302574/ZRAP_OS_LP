@@ -36,23 +36,33 @@ CLASS lhc_Travel DEFINITION INHERITING FROM cl_abap_behavior_handler.
 
     METHODS get_features FOR FEATURES
       IMPORTING keys REQUEST requested_features FOR Travel RESULT result.
+    METHODS get_authorizations FOR AUTHORIZATION
+      IMPORTING keys REQUEST requested_authorizations FOR travel RESULT result.
+    METHODS is_update_granted IMPORTING has_before_image      TYPE abap_bool
+                                        overall_status        TYPE /dmo/overall_status
+                              RETURNING VALUE(update_granted) TYPE abap_bool.
 
+    METHODS is_delete_granted IMPORTING has_before_image      TYPE abap_bool
+                                        overall_status        TYPE /dmo/overall_status
+                              RETURNING VALUE(delete_granted) TYPE abap_bool.
+
+    METHODS is_create_granted RETURNING VALUE(create_granted) TYPE abap_bool.
 ENDCLASS.
 
 CLASS lhc_Travel IMPLEMENTATION.
 
   METHOD calculateTotalPrice.
-  MODIFY ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
-      ENTITY travel
-        EXECUTE recalcTotalPrice
-        FROM CORRESPONDING #( keys )
-      REPORTED DATA(execute_reported).
+    MODIFY ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+        ENTITY travel
+          EXECUTE recalcTotalPrice
+          FROM CORRESPONDING #( keys )
+        REPORTED DATA(execute_reported).
 
     reported = CORRESPONDING #( DEEP execute_reported ).
   ENDMETHOD.
 
   METHOD calculateTravelID.
-      " Please note that this is just an example for calculating a field during _onSave_.
+    " Please note that this is just an example for calculating a field during _onSave_.
     " This approach does NOT ensure for gap free or unique travel IDs! It just helps to provide a readable ID.
     " The key of this business object is a UUID, calculated by the framework.
 
@@ -88,7 +98,7 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD setInitialStatus.
-      " Read relevant travel instance data
+    " Read relevant travel instance data
     READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
       ENTITY Travel
         FIELDS ( TravelStatus ) WITH CORRESPONDING #( keys )
@@ -125,36 +135,36 @@ CLASS lhc_Travel IMPLEMENTATION.
                                         MAPPING agency_id = AgencyId EXCEPT * ).
     DELETE agencies WHERE agency_id IS INITIAL.
 
-    IF agencies is NOT INITIAL.
-        "check if ID exists
+    IF agencies IS NOT INITIAL.
+      "check if ID exists
       SELECT FROM /dmo/agency FIELDS agency_id
         FOR ALL ENTRIES IN @agencies
         WHERE agency_id = @agencies-agency_id
-        INTO TABLE @data(agencies_db).
+        INTO TABLE @DATA(agencies_db).
     ENDIF.
 
-    LOOP at travels INTO DATA(travel).
-    "clear state messages that might exist
+    LOOP AT travels INTO DATA(travel).
+      "clear state messages that might exist
+      APPEND VALUE #( %tky = travel-%tky
+                  %state_area = 'VALIDATE_AGENCY' )
+         TO reported-travel.
+      IF travel-AgencyId IS INITIAL OR
+         NOT line_exists( agencies_db[ agency_id = travel-AgencyId ] ).
+        APPEND VALUE #( %tky = travel-%tky ) TO failed-travel.
         APPEND VALUE #( %tky = travel-%tky
-                    %state_area = 'VALIDATE_AGENCY' )
-           to reported-travel.
-        if travel-AgencyId is initial or
-           NOT line_exists( agencies_db[ agency_id = travel-AgencyId ] ).
-           APPEND VALUE #( %tky = travel-%tky ) to failed-travel.
-           APPEND VALUE #( %tky = travel-%tky
-                           %state_area = 'VALIDATE_AGENCY'
-                           %msg =  NEW zcm_rap_msg_lp1(
-                                            severity = if_abap_behv_message=>severity-error
-                                            textid = zcm_rap_msg_lp1=>agency_unknown
-                                            agencyid = travel-AgencyId  )
-                           %element-AgencyID = if_abap_behv=>mk-on )
-                  to reported-travel.
-        ENDIF.
-     ENDLOOP.
+                        %state_area = 'VALIDATE_AGENCY'
+                        %msg =  NEW zcm_rap_msg_lp1(
+                                         severity = if_abap_behv_message=>severity-error
+                                         textid = zcm_rap_msg_lp1=>agency_unknown
+                                         agencyid = travel-AgencyId  )
+                        %element-AgencyID = if_abap_behv=>mk-on )
+               TO reported-travel.
+      ENDIF.
+    ENDLOOP.
   ENDMETHOD.
 
   METHOD valCustomer.
-      "read relevant travel instance data
+    "read relevant travel instance data
     READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
         ENTITY Travel
             FIELDS ( CustomerId ) WITH CORRESPONDING #(  keys )
@@ -167,36 +177,36 @@ CLASS lhc_Travel IMPLEMENTATION.
                                         MAPPING customer_id = CustomerId EXCEPT * ).
     DELETE customers WHERE customer_id IS INITIAL.
 
-    IF customers is NOT INITIAL.
-        "check if ID exists
+    IF customers IS NOT INITIAL.
+      "check if ID exists
       SELECT FROM /dmo/customer FIELDS customer_id
         FOR ALL ENTRIES IN @customers
         WHERE customer_id = @customers-customer_id
-        INTO TABLE @data(customers_db).
+        INTO TABLE @DATA(customers_db).
     ENDIF.
 
-    LOOP at travels INTO DATA(travel).
-    "clear state messages that might exist
+    LOOP AT travels INTO DATA(travel).
+      "clear state messages that might exist
+      APPEND VALUE #( %tky = travel-%tky
+                  %state_area = 'VALIDATE_CUSTOMER' )
+         TO reported-travel.
+      IF travel-CustomerId IS INITIAL OR
+         NOT line_exists( customers_db[ customer_id = travel-CustomerId ] ).
+        APPEND VALUE #( %tky = travel-%tky ) TO failed-travel.
         APPEND VALUE #( %tky = travel-%tky
-                    %state_area = 'VALIDATE_CUSTOMER' )
-           to reported-travel.
-        if travel-CustomerId is initial or
-           NOT line_exists( customers_db[ customer_id = travel-CustomerId ] ).
-           APPEND VALUE #( %tky = travel-%tky ) to failed-travel.
-           APPEND VALUE #( %tky = travel-%tky
-                           %state_area = 'VALIDATE_CUSTOMER'
-                           %msg =  NEW zcm_rap_msg_lp1(
-                                            severity = if_abap_behv_message=>severity-error
-                                            textid = zcm_rap_msg_lp1=>customer_unknown
-                                            customerid = travel-CustomerId  )
-                           %element-CustomerID = if_abap_behv=>mk-on )
-                  to reported-travel.
-        ENDIF.
-     ENDLOOP.
+                        %state_area = 'VALIDATE_CUSTOMER'
+                        %msg =  NEW zcm_rap_msg_lp1(
+                                         severity = if_abap_behv_message=>severity-error
+                                         textid = zcm_rap_msg_lp1=>customer_unknown
+                                         customerid = travel-CustomerId  )
+                        %element-CustomerID = if_abap_behv=>mk-on )
+               TO reported-travel.
+      ENDIF.
+    ENDLOOP.
   ENDMETHOD.
 
   METHOD valDates.
-  " Read relevant travel instance data
+    " Read relevant travel instance data
     READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
       ENTITY Travel
         FIELDS ( TravelID BeginDate EndDate ) WITH CORRESPONDING #( keys )
@@ -280,39 +290,39 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD recalcTotalPrice.
-  TYPES: BEGIN OF ty_amount_per_currencycode,
+    TYPES: BEGIN OF ty_amount_per_currencycode,
              amount        TYPE /dmo/total_price,
              currency_code TYPE /dmo/currency_code,
            END OF ty_amount_per_currencycode.
 
-   DATA: amount_per_currencycode TYPE STANDARD TABLE OF ty_amount_per_currencycode.
+    DATA: amount_per_currencycode TYPE STANDARD TABLE OF ty_amount_per_currencycode.
 
-   " Read all relevant travel instances.
-   READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
-         ENTITY Travel
-            FIELDS ( BookingFee CurrencyCode )
-            WITH CORRESPONDING #( keys )
-         RESULT DATA(travels).
+    " Read all relevant travel instances.
+    READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+          ENTITY Travel
+             FIELDS ( BookingFee CurrencyCode )
+             WITH CORRESPONDING #( keys )
+          RESULT DATA(travels).
 
-   DELETE travels WHERE CurrencyCode IS INITIAL.
+    DELETE travels WHERE CurrencyCode IS INITIAL.
 
-   LOOP AT travels ASSIGNING FIELD-SYMBOL(<travel>).
+    LOOP AT travels ASSIGNING FIELD-SYMBOL(<travel>).
       " Set the start for the calculation by adding the booking fee.
       amount_per_currencycode = VALUE #( ( amount        = <travel>-BookingFee
                                            currency_code = <travel>-CurrencyCode ) ).
-    " Read all associated bookings and add them to the total price.
-    READ ENTITIES OF ZI_RAP_Travel_lp1 IN LOCAL MODE
-       ENTITY Travel BY \_Booking
-          FIELDS ( FlightPrice CurrencyCode )
-        WITH VALUE #( ( %tky = <travel>-%tky ) )
-        RESULT DATA(bookings).
-    LOOP AT bookings INTO DATA(booking) WHERE CurrencyCode IS NOT INITIAL.
+      " Read all associated bookings and add them to the total price.
+      READ ENTITIES OF ZI_RAP_Travel_lp1 IN LOCAL MODE
+         ENTITY Travel BY \_Booking
+            FIELDS ( FlightPrice CurrencyCode )
+          WITH VALUE #( ( %tky = <travel>-%tky ) )
+          RESULT DATA(bookings).
+      LOOP AT bookings INTO DATA(booking) WHERE CurrencyCode IS NOT INITIAL.
         COLLECT VALUE ty_amount_per_currencycode( amount        = booking-FlightPrice
                                                   currency_code = booking-CurrencyCode ) INTO amount_per_currencycode.
-    ENDLOOP.
+      ENDLOOP.
 
-    CLEAR <travel>-TotalPrice.
-     LOOP AT amount_per_currencycode INTO DATA(single_amount_per_currencycode).
+      CLEAR <travel>-TotalPrice.
+      LOOP AT amount_per_currencycode INTO DATA(single_amount_per_currencycode).
         " If needed do a Currency Conversion
         IF single_amount_per_currencycode-currency_code = <travel>-CurrencyCode.
           <travel>-TotalPrice += single_amount_per_currencycode-amount.
@@ -339,7 +349,7 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD get_features.
-   " Read the travel status of the existing travels
+    " Read the travel status of the existing travels
     READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
       ENTITY Travel
         FIELDS ( TravelStatus ) WITH CORRESPONDING #( keys )
@@ -360,6 +370,140 @@ CLASS lhc_Travel IMPLEMENTATION.
               %action-acceptTravel = is_accepted
               %action-rejectTravel = is_rejected
              ) ).
+  ENDMETHOD.
+
+  METHOD get_authorizations.
+    DATA: has_before_image    TYPE abap_bool,
+          is_update_requested TYPE abap_bool,
+          is_delete_requested TYPE abap_bool,
+          update_granted      TYPE abap_bool,
+          delete_granted      TYPE abap_bool.
+
+    DATA: failed_travel LIKE LINE OF failed-travel.
+
+    " Read the existing travels
+    READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+      ENTITY Travel
+        FIELDS ( TravelStatus ) WITH CORRESPONDING #( keys )
+      RESULT DATA(travels)
+      FAILED failed.
+
+    CHECK travels IS NOT INITIAL.
+
+*   In this example the authorization is defined based on the Activity + Travel Status
+*   For the Travel Status we need the before-image from the database. We perform this for active (is_draft=00) as well as for drafts (is_draft=01) as we can't distinguish between edit or new drafts
+    SELECT FROM zrap_atrav_lp1
+      FIELDS travel_uuid, overal_status
+      FOR ALL ENTRIES IN @travels
+      WHERE travel_uuid EQ @travels-TravelUUID
+      ORDER BY PRIMARY KEY
+      INTO TABLE @DATA(travels_before_image).
+
+    is_update_requested = COND #( WHEN requested_authorizations-%update              = if_abap_behv=>mk-on OR
+                                       requested_authorizations-%action-acceptTravel = if_abap_behv=>mk-on OR
+                                       requested_authorizations-%action-rejectTravel = if_abap_behv=>mk-on OR
+*                                       requested_authorizations-%action-Prepare      = if_abap_behv=>mk-on OR
+*                                       requested_authorizations-%action-Edit         = if_abap_behv=>mk-on OR
+                                       requested_authorizations-%assoc-_Booking      = if_abap_behv=>mk-on
+                                  THEN abap_true ELSE abap_false ).
+
+    is_delete_requested = COND #( WHEN requested_authorizations-%delete = if_abap_behv=>mk-on
+                                    THEN abap_true ELSE abap_false ).
+
+    LOOP AT travels INTO DATA(travel).
+      update_granted = delete_granted = abap_false.
+
+      READ TABLE travels_before_image INTO DATA(travel_before_image)
+           WITH KEY travel_uuid = travel-TravelUUID BINARY SEARCH.
+      has_before_image = COND #( WHEN sy-subrc = 0 THEN abap_true ELSE abap_false ).
+
+      IF is_update_requested = abap_true.
+        " Edit of an existing record -> check update authorization
+        IF has_before_image = abap_true.
+          update_granted = is_update_granted( has_before_image = has_before_image  overall_status = travel_before_image-overal_status ).
+          IF update_granted = abap_false.
+            APPEND VALUE #( %tky        = travel-%tky
+                            %msg        = NEW zcm_rap_msg_lp1( severity = if_abap_behv_message=>severity-error
+                                                            textid   = zcm_rap_msg_lp1=>unauthorized )
+                          ) TO reported-travel.
+          ENDIF.
+          " Creation of a new record -> check create authorization
+        ELSE.
+          update_granted = is_create_granted( ).
+          IF update_granted = abap_false.
+            APPEND VALUE #( %tky        = travel-%tky
+                            %msg        = NEW zcm_rap_msg_lp1( severity = if_abap_behv_message=>severity-error
+                                                            textid   = zcm_rap_msg_lp1=>unauthorized )
+                          ) TO reported-travel.
+          ENDIF.
+        ENDIF.
+      ENDIF.
+
+      IF is_delete_requested = abap_true.
+        delete_granted = is_delete_granted( has_before_image = has_before_image  overall_status = travel_before_image-overal_status ).
+        IF delete_granted = abap_false.
+          APPEND VALUE #( %tky        = travel-%tky
+                          %msg        = NEW zcm_rap_msg_lp1( severity = if_abap_behv_message=>severity-error
+                                                          textid   = zcm_rap_msg_lp1=>unauthorized )
+                          ) TO reported-travel.
+        ENDIF.
+      ENDIF.
+      APPEND VALUE #( %tky = travel-%tky
+
+                             %update              = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+                             %action-acceptTravel = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+                             %action-rejectTravel = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+*                      %action-Prepare      = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+*                      %action-Edit         = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+                             %assoc-_Booking      = COND #( WHEN update_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+
+                             %delete              = COND #( WHEN delete_granted = abap_true THEN if_abap_behv=>auth-allowed ELSE if_abap_behv=>auth-unauthorized )
+                           )
+               TO result.
+    ENDLOOP.
+
+  ENDMETHOD.
+
+  METHOD is_create_granted.
+    AUTHORITY-CHECK OBJECT 'ZOSTAT_LP1'
+     ID 'ZOSTAT_LP1' DUMMY
+     ID 'ACTVT' FIELD '01'.
+    create_granted = COND #( WHEN sy-subrc = 0 THEN abap_true ELSE abap_false ).
+    " Simulate full access - for testing purposes only! Needs to be removed for a productive implementation.
+    create_granted = abap_true.
+  ENDMETHOD.
+
+  METHOD is_delete_granted.
+    IF has_before_image = abap_true.
+      AUTHORITY-CHECK OBJECT 'ZOSTAT_LP1'
+        ID 'ZOSTAT_LP1' FIELD overall_status
+        ID 'ACTVT' FIELD '06'.
+    ELSE.
+      AUTHORITY-CHECK OBJECT 'ZOSTAT_LP1'
+        ID 'ZOSTAT_LP1' DUMMY
+        ID 'ACTVT' FIELD '06'.
+    ENDIF.
+    delete_granted = COND #( WHEN sy-subrc = 0 THEN abap_true ELSE abap_false ).
+
+    " Simulate full access - for testing purposes only! Needs to be removed for a productive implementation.
+    delete_granted = abap_true.
+  ENDMETHOD.
+
+  METHOD is_update_granted.
+    IF has_before_image = abap_true.
+      AUTHORITY-CHECK OBJECT 'ZOSTAT_LP1'
+        ID 'ZOSTAT_LP1' FIELD overall_status
+        ID 'ACTVT' FIELD '02'.
+    ELSE.
+      AUTHORITY-CHECK OBJECT 'ZOSTAT_LP1'
+        ID 'ZOSTAT_LP1' DUMMY
+        ID 'ACTVT' FIELD '02'.
+    ENDIF.
+    update_granted = COND #( WHEN sy-subrc = 0 THEN abap_true ELSE abap_false ).
+
+    " Simulate full access - for testing purposes only! Needs to be removed for a productive implementation.
+    update_granted = abap_true.
+
   ENDMETHOD.
 
 ENDCLASS.
