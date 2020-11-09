@@ -45,9 +45,63 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD calculateTravelID.
+      " Please note that this is just an example for calculating a field during _onSave_.
+    " This approach does NOT ensure for gap free or unique travel IDs! It just helps to provide a readable ID.
+    " The key of this business object is a UUID, calculated by the framework.
+
+    " check if TravelID is already filled
+    READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+      ENTITY Travel
+        FIELDS ( TravelID ) WITH CORRESPONDING #( keys )
+      RESULT DATA(travels).
+
+    " remove lines where TravelID is already filled.
+    DELETE travels WHERE TravelID IS NOT INITIAL.
+
+    " anything left ?
+    CHECK travels IS NOT INITIAL.
+
+    " Select max travel ID
+    SELECT SINGLE
+        FROM  zrap_atrav_lp1
+        FIELDS MAX( travel_id ) AS travelID
+        INTO @DATA(max_travelid).
+
+    " Set the travel ID
+    MODIFY ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+    ENTITY Travel
+      UPDATE
+        FROM VALUE #( FOR travel IN travels INDEX INTO i (
+          %tky              = travel-%tky
+          TravelID          = max_travelid + i
+          %control-TravelID = if_abap_behv=>mk-on ) )
+    REPORTED DATA(update_reported).
+
+    reported = CORRESPONDING #( DEEP update_reported ).
   ENDMETHOD.
 
   METHOD setInitialStatus.
+      " Read relevant travel instance data
+    READ ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+      ENTITY Travel
+        FIELDS ( TravelStatus ) WITH CORRESPONDING #( keys )
+      RESULT DATA(travels).
+
+    " Remove all travel instance data with defined status
+    DELETE travels WHERE TravelStatus IS NOT INITIAL.
+    CHECK travels IS NOT INITIAL.
+
+    " Set default travel status
+    MODIFY ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+    ENTITY Travel
+      UPDATE
+        FIELDS ( TravelStatus )
+        WITH VALUE #( FOR travel IN travels
+                      ( %tky         = travel-%tky
+                        TravelStatus = travel_status-open ) )
+    REPORTED DATA(update_reported).
+
+    reported = CORRESPONDING #( DEEP update_reported ).
   ENDMETHOD.
 
   METHOD valAgency.
