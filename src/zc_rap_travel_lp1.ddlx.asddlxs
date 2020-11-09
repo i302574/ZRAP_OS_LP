@@ -51,8 +51,12 @@ annotate view Zc_Rap_Travel_Lp1 with
   @UI: { identification: [{ position: 80 }],
        lineItem: [{ position: 80 }]}
   Description;
-  @UI: { identification: [{ position: 90 }],
-       lineItem: [{ position: 90 }]}
+  @UI: { identification: [{ position: 90 },
+                          { type: #FOR_ACTION, dataAction: 'acceptTravel', label: 'Accept' },
+                          { type: #FOR_ACTION, dataAction: 'rejectTravel', label: 'Reject' }],
+       lineItem: [{ position: 90 },
+                          { type: #FOR_ACTION, dataAction: 'acceptTravel', label: 'Accept' },
+                          { type: #FOR_ACTION, dataAction: 'rejectTravel', label: 'Reject' }]}
   TravelStatus;
   @UI.hidden: true
   CreatedBy;
