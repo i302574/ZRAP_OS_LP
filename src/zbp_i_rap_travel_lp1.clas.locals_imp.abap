@@ -60,6 +60,25 @@ CLASS lhc_Travel IMPLEMENTATION.
   ENDMETHOD.
 
   METHOD acceptTravel.
+   MODIFY ENTITIES OF zi_rap_travel_lp1 IN LOCAL MODE
+        ENTITY Travel
+            UPDATE
+                FIELDS ( TravelStatus )
+                WITH VALUE #( for key in keys
+                                ( %tky = key-%tky
+                                  TravelStatus = travel_status-accepted ) )
+        FAILED failed
+        REPORTED reported.
+
+   "fill the response table
+   READ ENTITIES of zi_rap_travel_lp1 IN LOCAL MODE
+    ENTITY Travel
+        ALL FIELDS WITH CORRESPONDING #( keys )
+    RESULT DATA(travels).
+
+    result = VALUE #(  for travel in travels
+                        ( %tky = travel-%tky
+                          %param = travel ) ).
 
   ENDMETHOD.
 
